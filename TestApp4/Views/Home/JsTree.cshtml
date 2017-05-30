@@ -1,0 +1,335 @@
+﻿
+@{
+    ViewBag.Title = "JsTree";
+}
+<html>
+    <head>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.3/themes/default/style.min.css" />
+        <link rel="stylesheet" type="text/css" href="~/Content/Site.css" />
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.3/jstree.min.js"></script>
+        <script src="~/Scripts/jquery-ui-1.12.1.min.js"></script>
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.15/js/dataTables.jqueryui.min.js"></script>
+    </head>
+
+    <body>
+        <h2>Ordnerstruktur</h2>
+        <div id="leftbox">
+            <div id="foldertree"></div>
+        </div>
+        <h2>Filestruktur</h2>
+        <div id="boxright">
+            <div id="files"></div>
+            <div id="boxarea">
+                <div id="boxdrop"> DropBox Area<br /></div>
+                <div id="boxdroptest"> Box Droptest</div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            var currentFolderObject = {};
+
+            function customMenu(node) {
+                var items = {
+                    createItem:{
+                        label: "Ordner anlegen",
+                        action: function (data) {
+                            console.log("Ordner anlegen");
+                            fa
+                            var inst = $.jstree.reference(data.reference);
+                            var parent = "";
+                            var temp = data.reference[0].id;
+                            folderid = temp.slice(0, temp.lastIndexOf('_'));
+
+                            //console.log(data);
+                            //console.log(inst);
+                            //console.log(folderid);
+
+                            if ($('#foldertree').jstree(true).get_parent(node) == '#') {
+                                parent = "#";
+                            }
+                            else {
+                                getParent = folderid.split("_");
+                                console.log(parent);
+                                parent = getParent[0];
+                            }
+
+                            inst.create_node(parent, {}, "last", function (create_folder) {
+                                console.log("subs");
+                                //console.log(create_folder);
+                                //create_folder.id = "2_3";
+                                //create_folder.li_attr.id = "2_3";
+                                console.log(create_folder.id);
+                                console.log(create_folder);
+                                inst.edit(create_folder);
+                            });
+                        }
+                    },
+                    renameItem: {
+                        label: "Umbenennen",
+                        action: function (data) {
+                            //n = $('#jsTreeHtml1').jstree(true).get_node(data.reference);
+                            //console.log(n);
+                            $('#foldertree').jstree(true).edit(node);
+                        }
+                        },
+                    deleteItem:{
+                            label: "Löschen",
+                            action: function (data) {
+                                $('#foldertree').jstree(true).delete_node(node)
+                            }
+                    },
+                    propItem: {
+                            label: "Eigenschaften bearbeiten",
+                            action: function (data) {
+                                console.log(node);
+                                @*var arr = node.id.split('_');
+                                var id = arr[1];
+                                console.log(id)
+                                var folderName = node.text.trim();
+                                console.log(folderName);
+                                $.ajax({
+                                    type: "POST",
+                                    url: "@Url.Action("FolderProperties")",
+                                    dataType:"json",
+                                data: {
+                                    folderid: id,
+                                    foldername: folderName
+                                },
+                                success: function (data) {
+                                    console.log("succ");
+                                    console.log(data)
+                                    alert("hi");
+                                    window.location.href = "/Home/FolderProperties/"+ data.FolderId;
+                                },
+                                failure: function (errMsg) {
+                                    alert(errMsg);
+                                },
+                            })*@
+                        //properties(node, data);
+                        }
+                    }
+                };
+                return items;
+            }
+
+            $(document).ready(function () {
+                var myFolderObject = {}
+                localStorage.removeItem('jstree');
+                $.getJSON("/Home/GetJsonData", null, function (data) {
+                    console.log(data);
+                    myFolderObject.foldercount = 0;
+                    for (var i in data) {
+                        if(data[i].parent == "#")
+                            myFolderObject.foldercount += 1;
+                    }
+
+                    $('#foldertree').jstree({
+                        "core": {
+                            'data': data,
+                            'check_callback': true
+                        },
+                        "state": {"key": "foldertree"},
+                        "plugins": ["state", "contextmenu"],
+                        "contextmenu": { items: customMenu }
+                    }).on('select_node.jstree', function (e, data) {
+                        currentFolderObject.folderId = data.node.id;
+                        console.log(data);
+                        if (data.node.parent == "#") {
+                            console.log("parent");
+                        }
+                        else {
+                            jQuery.ajax({
+                                async: true,
+                                method: "POST",
+                                data: {
+                                    "folderid": data.node.id,
+                                    "foldertext" : data.node.text
+                                },
+                                url: '@Url.Action("LoadFiles")',
+                                success: function (data, textStatus) {
+                                    $("#files").html(data);
+                                }
+                            });
+                        }
+                    }).on('rename_node.jstree', function (e, data) {
+                        console.log("rename_node");
+                        if (data.old == "New node") {
+                            console.log("ANLEGEN");
+                            if (data.node.parent == "#") {
+                                console.log(data);
+                                console.log(data.parent);
+                                console.log(data.node.id);
+                                var arr = data.node.id.split('_');
+                                var id = arr[1];
+                                console.log(id)
+                                var folderName = data.text;
+                                var folderCount = myFolderObject.foldercount;
+                                $.ajax({
+                                    type: "POST",
+                                    url: "@Url.Action("CreateFolder")",
+                                    data: {
+                                        id: id,
+                                        foldername: folderName,
+                                        totalfolders: folderCount
+                                    },
+                                    success: function (folderName) {
+                                        $("#jsTreeHtml1").load("/Home/JsTree");
+                                    },
+                                    failure: function (errMsg) {
+                                        alert(errMsg);
+                                    },
+                                })
+                            }
+                            else {
+                                console.log(data);
+                                console.log(data.node.id);
+                                console.log(data.node.parent);
+                                $.ajax({
+                                    type: "POST",
+                                    url: "@Url.Action("CreateSubFolder")",
+                                    data: {
+                                        id: id,
+                                        foldername: foldername
+                                        //totalfolders: folderCount.subfoldercount
+                                    },
+                                    success: function (folderName) {
+                                        $("#jsTreeHtml1").load("Home/JsTree");
+                                    },
+                                    failure: function (errMsg) {
+                                        alert(errMsg);
+                                    },
+                                })
+                            }
+                        }
+                        else {
+                            console.log("EDIT");
+                                var arr = data.node.id.split('_');
+                                var id = arr[1];
+                                var folderNameOld = data.old.trim();
+                                var folderNameNew = data.text;
+                                console.log(folderNameNew);
+                                $.ajax({
+                                    type: "POST",
+                                    url: "@Url.Action("EditFolder")",
+                                    data: {
+                                    id: id,
+                                    foldernameold: folderNameOld,
+                                    foldernamenew: folderNameNew
+                                    },
+                                success: function (folderName) {
+                                    $("#jsTreeHtml1").load("/Home/JsTree");
+                                },
+                                failure: function (errMsg) {
+                                    alert(errMsg);
+                                },
+                                })
+                        }
+                    }).on('delete_node.jstree', function (obj, data) {
+                        var folderName = (data.node.text).trim();
+                        var arr = (data.node.id).split("_");
+                        id = [1];
+                        $.ajax({
+                            type: "POST",
+                            url: "@Url.Action("DeleteFolder")",
+                            data: {
+                            id: id,
+                            foldername: folderName
+                            },
+                            success: function () {
+                                $("jsTreeHtml1").load("/Home/JsTree");
+                            },
+                            failure: function (errMsg) {
+                                alert(errMsg);
+                            }
+                        })
+                    });
+                })
+            });
+
+            /******* DND *******/
+
+            $(document).on({
+                dragover: function () {
+                    return false;
+                },
+                drop: function () {
+                    return false;
+                }
+            });
+
+            $("#boxdroptest").draggable();
+
+            $("#boxdrop").droppable({
+                drop: function (e) {
+                    alert("dropped");
+                }
+            });
+
+            var dropzone = document.getElementById("boxdrop");
+
+            // JSON FormData to DB
+
+            var uploadFormData = function (files, folderid) {
+                var fd = new FormData();
+
+                var getActionLink = '@Url.Action("HandleFileUploadDataBase", "Home", new { myFolderId = "-1" })';
+                getActionLink = getActionLink.replace("-1", folderid);
+                console.log(getActionLink);
+                for (i = 0; i < files.length; i++) {
+                    fd.append(files[i].name, files[i]);
+                }
+                var xhr = new XMLHttpRequest();
+                //xhr.onreadystatechange = stateChange;
+                xhr.open('POST', getActionLink, true);
+                console.log(fd);
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4) {
+                        for (i = 0; i < files.length; i++) {
+                            console.log("1");
+                            var link = $('<tr><td> <a href="/Home/ReadFiles/?fileName=' + files[i].name + '">'+files[i].name+'</a></td><td>' + files[i].size + '</td><td>' + files[i].type + '</td></tr>');
+                            //$("table").append("<tr><td>" + files[i].name + "</td>" + "<td>" + files[i].size + "</td>" + "<td>" + files[i].type + "</td></tr>");
+                            $("table").append(link)
+                            //$("table").append("<td>" + files[i].size + "</td>" + "<td>" + files[i].type + "</td></tr>");
+                        
+                        };
+                    };
+                };
+            
+                xhr.send(fd);
+            }
+
+            // Show upload complete or upload failed depending on result
+            function stateChange(e) {
+                if (e.target.readyState == 4) {
+                    if (e.target.status == 200) {
+                        $('#boxdrop').text('Upload Complete!' + e.target.status);
+                        //$('#boxright').text('Done');
+                    }
+                    else {
+                        boxdrop.text('Upload Failed!');
+                        boxdrop.addClass('error');
+                    }
+                }
+            }
+
+            dropzone.ondrop = function (e, data) {
+                e.preventDefault();
+
+                for (i = 0; i < e.dataTransfer.files.length; i++) {
+                    $("#boxdrop").append(e.dataTransfer.files[i].name + "...." + e.dataTransfer.files[i].lastModifiedDate + "...." + e.dataTransfer.files[i].hasOwnProperty.caller + "<br>");
+                }
+
+                //upload(e.dataTransfer.files);
+                //uploadJson(e.dataTransfer.files);
+                uploadFormData(e.dataTransfer.files, currentFolderObject.folderId);
+
+            };
+        </script>
+    </body>
+</html>

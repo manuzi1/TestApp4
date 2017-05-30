@@ -1,0 +1,51 @@
+﻿@model List<TestApp4.Controllers.HomeController.DisplayFiles>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#filetree').dataTable({
+                "paging": false,
+                "ordering": true,
+                "info": true,
+                "language": {
+                    "zeroRecords": "Keine Einträge vorhanden",
+                    "info": "Anzahl der Dateien _MAX_",
+                    "infoEmpty": ""
+                }
+            });
+        });
+    </script>
+
+
+<table class="display compact" id="filetree">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Betreff</th>
+            <th>Öffentlich</th>
+            <th>Löschen</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.ActionLink(item.Filename, "ReadFiles", "Home", new { uploadId = item.UploadId, fileName = item.Filename}, null)
+                </td>
+                <td>
+                    Betreff
+                </td>
+                <td>
+                    Checkbox
+                </td>
+                <td onclick="window.location.reload()">
+                    @Html.ActionLink("Löschen", "DeleteDocument", "Home", new { id = item.UploadId }, null)
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+
+
